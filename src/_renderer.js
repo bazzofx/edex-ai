@@ -509,6 +509,8 @@ async function initUI() {
 
     // eDEX AI: browser panel and workspace layouts
     window.browserPanel = new BrowserPanel();
+    // eDEX AI: assistant panel (shares the on-screen keyboard slot)
+    window.assistantPanel = new AssistantPanel();
 
     // eDEX AI: update checks contact api.github.com, so they are opt-in
     if (window.settings.updateCheck === true) window.updateCheck = new UpdateChecker();

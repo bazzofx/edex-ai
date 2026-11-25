@@ -314,6 +314,26 @@ app.on('ready', async () => {
     edexai.ui = new UiController(() => win, guard);
     require("./main/ipc.js").registerBrowserIpc(guard, edexai.browser);
 
+    // eDEX AI: assistant (LLM + tools)
+    try {
+        const {loadConfig} = require("./config/config.js");
+        const loaded = loadConfig(electron.app.getPath("userData"));
+        edexai.config = loaded.config;
+        edexai.browser.defaultSearch = edexai.config.searchProvider || edexai.browser.defaultSearch;
+        signale.info(`eDEX AI config: ${loaded.file}${loaded.created ? " (created with defaults)" : ""}`);
+        edexai.assistant = require("./main/assistant.js").createAssistant({
+            config: edexai.config,
+            userDataDir: electron.app.getPath("userData"),
+            browser: edexai.browser,
+            ui: edexai.ui,
+            getWindow: () => win,
+            guard,
+            log: msg => signale.note(`[assistant] ${msg}`)
+        });
+    } catch (e) {
+        signale.error(`Assistant unavailable: ${e.message}`);
+    }
+
     // Support for more terminals, used for creating tabs (currently limited to 4 extra terms)
     extraTtys = {};
     let basePort = settings.port || 3000;

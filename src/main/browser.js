@@ -188,13 +188,16 @@ class BrowserManager {
                 done = true;
                 clearTimeout(timer);
                 wc.removeListener("did-stop-loading", onStop);
+                wc.removeListener("dom-ready", onStop);
                 if (wc.isDestroyed()) { resolve(result(false, "Tab was closed")); return; }
                 if (tab.lastError) { resolve(result(false, `Navigation failed: ${tab.lastError}`)); return; }
                 resolve(result(true, {tabId: tab.id, url: wc.getURL(), title: wc.getTitle(), status}));
             };
-            const onStop = () => setTimeout(() => finish("loaded"), 50);
+            // DOM ready is enough to report the page (heavy sites keep loading for seconds)
+            const onStop = () => setTimeout(() => finish(wc.isLoading() ? "dom ready" : "loaded"), 50);
             const timer = setTimeout(() => finish("still loading"), waitMs);
             wc.on("did-stop-loading", onStop);
+            wc.once("dom-ready", onStop);
         });
     }
 

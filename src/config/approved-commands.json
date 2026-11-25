@@ -1,0 +1,29 @@
+[
+    {
+        "id": "ipconfig",
+        "description": "Show network adapter configuration",
+        "program": "ipconfig",
+        "args": [],
+        "platforms": ["win32"]
+    },
+    {
+        "id": "ping",
+        "description": "Ping a host 4 times",
+        "program": "ping",
+        "args": ["-n", "4", "{host}"],
+        "params": {"host": {"pattern": "[A-Za-z0-9][A-Za-z0-9.-]{0,252}", "description": "Host name or IPv4 address"}},
+        "platforms": ["win32"]
+    },
+    {
+        "id": "nvidia-smi",
+        "description": "Show NVIDIA GPU status",
+        "program": "nvidia-smi",
+        "args": []
+    },
+    {
+        "id": "ollama-list",
+        "description": "List installed local Ollama models",
+        "program": "ollama",
+        "args": ["list"]
+    }
+]

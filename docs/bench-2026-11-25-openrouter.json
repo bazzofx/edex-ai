@@ -1,0 +1,308 @@
+[
+  {
+    "model": "OpenRouter nvidia/nemotron-3.5-lightning:free",
+    "passed": 12,
+    "total": 12,
+    "errors": 0,
+    "medianTtftMs": 725,
+    "medianTotalMs": 1682,
+    "rows": [
+      {
+        "case": 1,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 1693,
+        "totalMs": 3013,
+        "rounds": 3,
+        "got": [
+          "browser_search({\"query\":\"black hole documentaries\",\"provider\":\"youtube\",\"newTab\":false})",
+          "ui_setLayout({\"layout\":\"split\"})"
+        ],
+        "reply": "YouTube opened with black‑hole documentary search, and the desktop is now in split view."
+      },
+      {
+        "case": 2,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 725,
+        "totalMs": 1682,
+        "rounds": 2,
+        "got": [
+          "browser_open({\"url\":\"wikipedia.org\"})"
+        ],
+        "reply": "Opened Wikipedia."
+      },
+      {
+        "case": 3,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 534,
+        "totalMs": 12279,
+        "rounds": 5,
+        "got": [
+          "browser_search({\"query\":\"weather in London\",\"provider\":\"duckduckgo\"})",
+          "browser_open({\"url\":\"https://www.google.com/search?q=weather+London\"})",
+          "browser_open({\"url\":\"https://www.bbc.co.uk/weather/2761369\"})",
+          "browser_search({\"query\":\"London weather\",\"provider\":\"google\"})"
+        ],
+        "reply": "I've opened the BBC Weather page for London, but I can't read the page content to show you the current conditions."
+      },
+      {
+        "case": 4,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 485,
+        "totalMs": 1316,
+        "rounds": 2,
+        "got": [
+          "ui_setLayout({\"layout\":\"terminal\"})"
+        ],
+        "reply": "Switched to terminal layout."
+      },
+      {
+        "case": 5,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 412,
+        "totalMs": 1689,
+        "rounds": 2,
+        "got": [
+          "system_getStats({})"
+        ],
+        "reply": "Your CPU is currently at 12 % load."
+      },
+      {
+        "case": 6,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 504,
+        "totalMs": 993,
+        "rounds": 2,
+        "got": [
+          "browser_back({})"
+        ],
+        "reply": "There's nothing to go back to in this tab."
+      },
+      {
+        "case": 7,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 1082,
+        "totalMs": 1438,
+        "rounds": 2,
+        "got": [
+          "browser_media({\"action\":\"pause\"})"
+        ],
+        "reply": "Video paused."
+      },
+      {
+        "case": 8,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 687,
+        "totalMs": 1501,
+        "rounds": 2,
+        "got": [
+          "browser_newTab({\"url\":\"https://github.com\"})"
+        ],
+        "reply": "Opened GitHub."
+      },
+      {
+        "case": 9,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 1303,
+        "totalMs": 1802,
+        "rounds": 2,
+        "got": [
+          "browser_closeTab({})"
+        ],
+        "reply": "Tab closed."
+      },
+      {
+        "case": 10,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 780,
+        "totalMs": 1671,
+        "rounds": 2,
+        "got": [
+          "ui_setLayout({\"layout\":\"browser\"})"
+        ],
+        "reply": "Browser is now full screen."
+      },
+      {
+        "case": 11,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 3009,
+        "totalMs": 3378,
+        "rounds": 2,
+        "got": [
+          "terminal_createTab({})"
+        ],
+        "reply": "New terminal tab opened."
+      },
+      {
+        "case": 12,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 435,
+        "totalMs": 554,
+        "rounds": 1,
+        "got": [],
+        "reply": "Why did the computer go to therapy? Because it had too many bytes of emotional baggage."
+      }
+    ]
+  },
+  {
+    "model": "OpenRouter nvidia/nemotron-3.5-super-vl:free",
+    "passed": 11,
+    "total": 12,
+    "errors": 1,
+    "medianTtftMs": 20464,
+    "medianTotalMs": 36696,
+    "rows": [
+      {
+        "case": 1,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 22565,
+        "totalMs": 43913,
+        "rounds": 2,
+        "got": [
+          "browser_search({\"query\":\"black hole documentaries\",\"provider\":\"youtube\"})",
+          "ui_setLayout({\"layout\":\"split\"})"
+        ],
+        "reply": "YouTube is open with black hole documentary results, and the view is now split."
+      },
+      {
+        "case": 2,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 21140,
+        "totalMs": 36696,
+        "rounds": 2,
+        "got": [
+          "browser_open({\"url\":\"wikipedia.org\"})"
+        ],
+        "reply": "Wikipedia is now open."
+      },
+      {
+        "case": 3,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 15473,
+        "totalMs": 28371,
+        "rounds": 2,
+        "got": [
+          "browser_search({\"query\":\"weather in London\",\"provider\":\"google\"})"
+        ],
+        "reply": "I searched for the weather in London. The search results page is now open in your browser."
+      },
+      {
+        "case": 4,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 826,
+        "totalMs": 20522,
+        "rounds": 2,
+        "got": [
+          "ui_setLayout({\"layout\":\"terminal\"})"
+        ],
+        "reply": "Switched to terminal only."
+      },
+      {
+        "case": 5,
+        "pass": false,
+        "ok": false,
+        "rounds": 0,
+        "error": "OpenRouter error 503: Provider returned error",
+        "got": [],
+        "reply": ""
+      },
+      {
+        "case": 6,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 12906,
+        "totalMs": 30424,
+        "rounds": 2,
+        "got": [
+          "browser_back({})"
+        ],
+        "reply": "There's nothing to go back to in this tab."
+      },
+      {
+        "case": 7,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 20464,
+        "totalMs": 45413,
+        "rounds": 2,
+        "got": [
+          "browser_media({\"action\":\"pause\"})"
+        ],
+        "reply": "The video is paused."
+      },
+      {
+        "case": 8,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 22676,
+        "totalMs": 53544,
+        "rounds": 2,
+        "got": [
+          "browser_newTab({\"url\":\"github.com\"})"
+        ],
+        "reply": "GitHub is now open in a new tab."
+      },
+      {
+        "case": 9,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 20683,
+        "totalMs": 40625,
+        "rounds": 2,
+        "got": [
+          "browser_closeTab({})"
+        ],
+        "reply": "Tab closed."
+      },
+      {
+        "case": 10,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 22700,
+        "totalMs": 39678,
+        "rounds": 2,
+        "got": [
+          "ui_setLayout({\"layout\":\"browser\"})"
+        ],
+        "reply": "The browser is now full screen."
+      },
+      {
+        "case": 11,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 19068,
+        "totalMs": 34891,
+        "rounds": 2,
+        "got": [
+          "terminal_createTab({})"
+        ],
+        "reply": "A new terminal tab has been opened."
+      },
+      {
+        "case": 12,
+        "pass": true,
+        "ok": true,
+        "ttftMs": 13430,
+        "totalMs": 13508,
+        "rounds": 1,
+        "got": [],
+        "reply": "Why don't scientists trust atoms? Because they make up everything."
+      }
+    ]
+  }
+]
