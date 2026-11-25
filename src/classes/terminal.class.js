@@ -3,11 +3,11 @@ class Terminal {
         if (opts.role === "client") {
             if (!opts.parentId) throw "Missing options";
 
-            this.xTerm = require("xterm").Terminal;
-            const {AttachAddon} = require("xterm-addon-attach");
-            const {FitAddon} = require("xterm-addon-fit");
-            const {LigaturesAddon} = require("xterm-addon-ligatures");
-            const {WebglAddon} = require("xterm-addon-webgl");
+            this.xTerm = require("@xterm/xterm").Terminal;
+            const {AttachAddon} = require("@xterm/addon-attach");
+            const {FitAddon} = require("@xterm/addon-fit");
+            const {LigaturesAddon} = require("@xterm/addon-ligatures");
+            const {WebglAddon} = require("@xterm/addon-webgl");
             this.Ipc = require("electron").ipcRenderer;
 
             this.port = opts.port || 3000;
@@ -110,13 +110,15 @@ class Terminal {
                 letterSpacing: window.theme.terminal.letterSpacing || 0,
                 lineHeight: window.theme.terminal.lineHeight || 1,
                 scrollback: 1500,
-                bellStyle: "none",
+                // xterm 5: ligatures addon needs the proposed API
+                allowProposedApi: true,
                 theme: {
                     foreground: window.theme.terminal.foreground,
                     background: window.theme.terminal.background,
                     cursor: window.theme.terminal.cursor,
                     cursorAccent: window.theme.terminal.cursorAccent,
-                    selection: window.theme.terminal.selection,
+                    // xterm 5 renamed "selection" to "selectionBackground"
+                    selectionBackground: window.theme.terminal.selection,
                     black: window.theme.colors.black || colorify("#2e3436", themeColor),
                     red: window.theme.colors.red || colorify("#cc0000", themeColor),
                     green: window.theme.colors.green || colorify("#4e9a06", themeColor),
@@ -138,9 +140,18 @@ class Terminal {
             let fitAddon = new FitAddon();
             this.term.loadAddon(fitAddon);
             this.term.open(document.getElementById(opts.parentId));
-            this.term.loadAddon(new WebglAddon());
-            let ligaturesAddon = new LigaturesAddon();
-            this.term.loadAddon(ligaturesAddon);
+            // eDEX AI: xterm 5's WebGL renderer drew a grey background and wrong cell widths
+            // on a GTX 1070, so the DOM renderer is the default; opt in with settings.termWebGL.
+            if (window.settings.termWebGL === true) try {
+                this.term.loadAddon(new WebglAddon());
+            } catch (e) {
+                console.warn("WebGL renderer unavailable, using DOM renderer", e);
+            }
+            try {
+                this.term.loadAddon(new LigaturesAddon());
+            } catch (e) {
+                console.warn("Ligatures addon failed to load", e);
+            }
             this.term.attachCustomKeyEventHandler(e => {
                 window.keyboard.keydownHandler(e);
                 return true;
@@ -176,7 +187,8 @@ class Terminal {
             let sockHost = opts.host || "127.0.0.1";
             let sockPort = this.port;
 
-            this.socket = new WebSocket("ws://"+sockHost+":"+sockPort);
+            // eDEX AI: the server only accepts the per-launch token from the main process
+            this.socket = new WebSocket("ws://"+sockHost+":"+sockPort+"/?token="+encodeURIComponent(remote.terminalToken || ""));
             this.socket.onopen = () => {
                 let attachAddon = new AttachAddon(this.socket);
                 this.term.loadAddon(attachAddon);
@@ -419,15 +431,24 @@ class Terminal {
                 this.onclosed(code, signal);
             });
 
+            // eDEX AI security fix: upstream listened on every interface, and its
+            // one-client guard read clients.length on a Set (always undefined), so any
+            // host on the LAN or any web page could attach to the shell.
+            const {isTerminalClientAllowed} = require("../security/terminalAuth.js");
+            this.token = opts.token;
             this.wss = new this.Websocket({
+                host: "127.0.0.1",
                 port: this.port,
                 clientTracking: true,
                 verifyClient: info => {
-                    if (this.wss.clients.length >= 1) {
-                        return false;
-                    } else {
-                        return true;
-                    }
+                    const ok = isTerminalClientAllowed({
+                        token: this.token,
+                        reqUrl: info.req.url,
+                        origin: info.origin,
+                        remoteAddress: info.req.socket.remoteAddress
+                    });
+                    if (!ok) console.warn(`Rejected terminal connection on port ${this.port} (origin: ${info.origin || "none"})`);
+                    return ok;
                 }
             });
             this.Ipc.on("terminal_channel-"+this.port, (e, ...args) => {
@@ -456,14 +477,18 @@ class Terminal {
                 }
             });
             this.wss.on("connection", ws => {
+                // One UI client per terminal: a reconnect (UI hot reload) replaces the old socket
+                this.wss.clients.forEach(c => { if (c !== ws) c.terminate(); });
                 this.onopened(this.tty._pid);
                 ws.on("close", (code, reason) => {
+                    if (dataListener) dataListener.dispose();
                     this.ondisconnected(code, reason);
                 });
                 ws.on("message", msg => {
-                    this.tty.write(msg);
+                    // ws 8 delivers Buffers
+                    this.tty.write(msg.toString("utf8"));
                 });
-                this.tty.onData(data => {
+                const dataListener = this.tty.onData(data => {
                     this._nextTickUpdateTtyCWD = true;
                     this._nextTickUpdateProcess = true;
                     try {

@@ -45,9 +45,13 @@ class Netstat {
         this.geoLookup = {
             get: () => null
         };
+        // eDEX AI: the GeoIP database download (GitHub) and the external IP lookup
+        // (myexternalip.com) are opt-in via settings.externalIpLookup.
+        this.lookupsEnabled = window.settings.externalIpLookup === true;
+        if (!this.lookupsEnabled) return;
         let geolite2 = require("geolite2-redist");
         let maxmind = require("maxmind");
-        geolite2.downloadDbs(require("path").join(require("@electron/remote").app.getPath("userData"), "geoIPcache")).then(() => {
+        geolite2.downloadDbs(require("path").join(remote.app.getPath("userData"), "geoIPcache")).then(() => {
            geolite2.open('GeoLite2-City', path => {
                 return maxmind.open(path);
             }).catch(e => {throw e}).then(lookup => {
@@ -104,7 +108,10 @@ class Netstat {
             if (net.ip4 === "127.0.0.1") {
                 offline = true;
             } else {
-                if (this.runsBeforeGeoIPUpdate === 0 && this.lastconn.finished) {
+                if (!this.lookupsEnabled) {
+                    // Show the local address instead of the public one
+                    document.querySelector("#mod_netstat_innercontainer > div:nth-child(2) > h2").innerHTML = window._escapeHtml(net.ip4);
+                } else if (this.runsBeforeGeoIPUpdate === 0 && this.lastconn.finished) {
                     this.lastconn = require("https").get({host: "myexternalip.com", port: 443, path: "/json", localAddress: net.ip4, agent: this._httpsAgent}, res => {
                         let rawData = "";
                         res.on("data", chunk => {

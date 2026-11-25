@@ -1,9 +1,9 @@
 const signale = require("signale");
-const {app, BrowserWindow, dialog, shell} = require("electron");
+const {app, BrowserWindow, dialog} = require("electron");
 
 process.on("uncaughtException", e => {
     signale.fatal(e);
-    dialog.showErrorBox("eDEX-UI crashed", e.message || "Cannot retrieve error message.");
+    dialog.showErrorBox("eDEX AI crashed", e.message || "Cannot retrieve error message.");
     if (tty) {
         tty.close();
     }
@@ -17,7 +17,13 @@ process.on("uncaughtException", e => {
     process.exit(1);
 });
 
-signale.start(`Starting eDEX-UI v${app.getVersion()}`);
+// eDEX AI: optional separate settings folder (used by tests), must run before any getPath
+if (process.env.EDEXAI_HOME) app.setPath("userData", require("path").resolve(process.env.EDEXAI_HOME));
+const DEV_MODE = process.argv.includes("--dev");
+// Per-launch secret required to attach to a terminal WebSocket
+const TERMINAL_TOKEN = require("crypto").randomBytes(24).toString("hex");
+
+signale.start(`Starting eDEX AI v${app.getVersion()}`);
 signale.info(`With Node ${process.versions.node} and Electron ${process.versions.electron}`);
 signale.info(`Renderer is Chrome ${process.versions.chrome}`);
 
@@ -30,7 +36,6 @@ if (!gotLock) {
 signale.time("Startup");
 
 const electron = require("electron");
-require('@electron/remote/main').initialize()
 const ipc = electron.ipcMain;
 const path = require("path");
 const url = require("url");
@@ -38,11 +43,18 @@ const fs = require("fs");
 const which = require("which");
 const Terminal = require("./classes/terminal.class.js").Terminal;
 
-ipc.on("log", (e, type, content) => {
-    signale[type](content);
-});
-
 var win, tty, extraTtys;
+
+const guard = require("./main/ipcGuard.js").createGuard(ipc, () => win, msg => signale.warn(msg));
+const LOG_TYPES = new Set(["info", "note", "debug", "warn", "error", "success", "fatal", "pending", "complete", "watch"]);
+guard.on("log", (e, type, content) => {
+    if (LOG_TYPES.has(type)) signale[type](String(content));
+});
+require("./main/legacyBridge.js").registerLegacyBridge(guard, () => win, {
+    version: app.getVersion(),
+    terminalToken: TERMINAL_TOKEN,
+    dev: DEV_MODE
+});
 const settingsFile = path.join(electron.app.getPath("userData"), "settings.json");
 const shortcutsFile = path.join(electron.app.getPath("userData"), "shortcuts.json");
 const lastWindowStateFile = path.join(electron.app.getPath("userData"), "lastWindowState.json");
@@ -93,7 +105,10 @@ if (!fs.existsSync(settingsFile)) {
         hideDotfiles: false,
         fsListView: false,
         experimentalGlobeFeatures: false,
-        experimentalFeatures: false
+        experimentalFeatures: false,
+        // eDEX AI: outbound lookups are opt-in
+        updateCheck: false,
+        externalIpLookup: false
     }, "", 4));
     signale.info(`Default settings written to ${settingsFile}`);
 }
@@ -177,8 +192,17 @@ function createWindow(settings) {
     }
     let {x, y, width, height} = display.bounds;
     width++; height++;
+    if (DEV_MODE) {
+        // Windowed developer mode: never force fullscreen
+        settings.allowWindowed = true;
+        settings.forceFullscreen = false;
+        width = Math.min(1600, display.workArea.width);
+        height = Math.min(900, display.workArea.height);
+        x = display.workArea.x + Math.round((display.workArea.width - width) / 2);
+        y = display.workArea.y + Math.round((display.workArea.height - height) / 2);
+    }
     win = new BrowserWindow({
-        title: "eDEX-UI",
+        title: "eDEX AI",
         x,
         y,
         width,
@@ -192,8 +216,10 @@ function createWindow(settings) {
         backgroundColor: '#000000',
         webPreferences: {
             devTools: true,
-	    enableRemoteModule: true,
+            // Legacy eDEX renderer still needs Node (migration to contextIsolation is a later milestone).
+            // It only ever loads the bundled ui.html; web content lives in sandboxed WebContentsViews.
             contextIsolation: false,
+            sandbox: false,
             backgroundThrottling: false,
             webSecurity: true,
             nodeIntegration: true,
@@ -210,10 +236,11 @@ function createWindow(settings) {
     }));
 
     signale.complete("Frontend window created!");
+    require("./main/legacyBridge.js").forwardWindowEvents(win);
     win.show();
     if (!settings.allowWindowed) {
         win.setResizable(false);
-    } else if (!require(lastWindowStateFile)["useFullscreen"]) {
+    } else if (DEV_MODE || !require(lastWindowStateFile)["useFullscreen"]) {
         win.setFullScreen(false);
     }
 
@@ -247,7 +274,8 @@ app.on('ready', async () => {
         params: settings.shellArgs || '',
         cwd: settings.cwd,
         env: cleanEnv,
-        port: settings.port || 3000
+        port: settings.port || 3000,
+        token: TERMINAL_TOKEN
     });
     signale.success(`Terminal back-end initialized!`);
     tty.onclosed = (code, signal) => {
@@ -282,7 +310,7 @@ app.on('ready', async () => {
         extraTtys[basePort+i] = null;
     }
 
-    ipc.on("ttyspawn", (e, arg) => {
+    guard.on("ttyspawn", (e, arg) => {
         let port = null;
         Object.keys(extraTtys).forEach(key => {
             if (extraTtys[key] === null && port === null) {
@@ -302,7 +330,8 @@ app.on('ready', async () => {
                 params: settings.shellArgs || '',
                 cwd: tty.tty._cwd || settings.cwd,
                 env: cleanEnv,
-                port: port
+                port: port,
+                token: TERMINAL_TOKEN
             });
             signale.success(`New terminal back-end initialized at ${port}`);
             term.onclosed = (code, signal) => {
@@ -332,31 +361,35 @@ app.on('ready', async () => {
     // Backend support for theme and keyboard hotswitch
     let themeOverride = null;
     let kbOverride = null;
-    ipc.on("getThemeOverride", (e, arg) => {
+    guard.on("getThemeOverride", (e, arg) => {
         e.sender.send("getThemeOverride", themeOverride);
     });
-    ipc.on("getKbOverride", (e, arg) => {
+    guard.on("getKbOverride", (e, arg) => {
         e.sender.send("getKbOverride", kbOverride);
     });
-    ipc.on("setThemeOverride", (e, arg) => {
+    guard.on("setThemeOverride", (e, arg) => {
         themeOverride = arg;
     });
-    ipc.on("setKbOverride", (e, arg) => {
+    guard.on("setKbOverride", (e, arg) => {
         kbOverride = arg;
     });
 });
 
 app.on('web-contents-created', (e, contents) => {
-    // Prevent creating more than one window
-    contents.on('new-window', (e, url) => {
-        e.preventDefault();
-        shell.openExternal(url);
+    // Embedded browser tabs get their own handlers (src/main/browser.js)
+    if (contents.session === electron.session.fromPartition("persist:web")) return;
+
+    // Prevent creating more than one window. Never hand arbitrary URLs to the OS.
+    contents.setWindowOpenHandler(({url}) => {
+        signale.note(`Blocked window.open from UI: ${url}`);
+        return {action: "deny"};
     });
 
     // Prevent loading something else than the UI
     contents.on('will-navigate', (e, url) => {
         if (url !== contents.getURL()) e.preventDefault();
     });
+    contents.on('will-attach-webview', e => e.preventDefault());
 });
 
 app.on('window-all-closed', () => {

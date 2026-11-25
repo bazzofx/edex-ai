@@ -42,3 +42,8 @@ jspm_packages
 dist
 prebuild-src
 src/node_modules
+
+# eDEX AI
+tests/smoke/out/
+voice/models/
+__pycache__/
