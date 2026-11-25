@@ -46,4 +46,24 @@ src/node_modules
 # eDEX AI
 tests/smoke/out/
 voice/models/
+voice/.venv/
+.venv/
 __pycache__/
+*.pyc
+
+# Secrets and local config (API keys come from environment variables only)
+.env
+.env.*
+*.local.json
+edex-ai.json
+!src/config/edex-ai.example.json
+
+# Editors / OS
+.vscode/
+.claude/
+Thumbs.db
+.DS_Store
+
+# Audio captures (raw audio is never kept by default)
+*.wav.tmp
+recordings/
