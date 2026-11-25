@@ -44,6 +44,8 @@ const which = require("which");
 const Terminal = require("./classes/terminal.class.js").Terminal;
 
 var win, tty, extraTtys;
+// eDEX AI services (browser, ui controller, assistant, voice)
+const edexai = {};
 
 const guard = require("./main/ipcGuard.js").createGuard(ipc, () => win, msg => signale.warn(msg));
 const LOG_TYPES = new Set(["info", "note", "debug", "warn", "error", "success", "fatal", "pending", "complete", "watch"]);
@@ -301,6 +303,17 @@ app.on('ready', async () => {
 
     createWindow(settings);
 
+    // eDEX AI: embedded browser, UI controller and their IPC
+    const {BrowserManager} = require("./main/browser.js");
+    const {UiController} = require("./main/uiController.js");
+    edexai.browser = new BrowserManager(win, {
+        log: msg => signale.note(msg),
+        notify: (type, message) => { if (!win.isDestroyed()) win.webContents.send("edexai:browser:notice", {type, message}); },
+        defaultSearch: settings.searchProvider || "duckduckgo"
+    });
+    edexai.ui = new UiController(() => win, guard);
+    require("./main/ipc.js").registerBrowserIpc(guard, edexai.browser);
+
     // Support for more terminals, used for creating tabs (currently limited to 4 extra terms)
     extraTtys = {};
     let basePort = settings.port || 3000;
@@ -398,6 +411,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+    if (edexai.browser) edexai.browser.destroy();
     tty.close();
     Object.keys(extraTtys).forEach(key => {
         if (extraTtys[key] !== null) {

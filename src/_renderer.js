@@ -507,6 +507,9 @@ async function initUI() {
 
     await _delay(200);
 
+    // eDEX AI: browser panel and workspace layouts
+    window.browserPanel = new BrowserPanel();
+
     // eDEX AI: update checks contact api.github.com, so they are opt-in
     if (window.settings.updateCheck === true) window.updateCheck = new UpdateChecker();
 }

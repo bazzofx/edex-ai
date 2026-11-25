@@ -1,0 +1,184 @@
+/* eDEX AI: browser panel and workspace layouts. Uses the theme variables only. */
+
+section#main_shell.edexai-shell {
+    position: relative;
+}
+
+/* Layouts */
+section#main_shell[data-layout="split"] div#main_shell_innercontainer {
+    width: calc(50% - 0.37vh);
+}
+section#main_shell[data-layout="browser"] div#main_shell_innercontainer {
+    visibility: hidden;
+}
+
+ul#main_shell_tabs > li#shell_tab_browser[data-on="1"] {
+    background: rgba(var(--color_r), var(--color_g), var(--color_b), 0.35);
+    font-weight: bold;
+}
+
+div#browser_panel {
+    position: absolute;
+    right: 0.74vh;
+    bottom: 0.74vh;
+    left: 0.74vh;
+    display: none;
+    flex-direction: column;
+    box-sizing: border-box;
+    border-left: 0.18vh solid rgba(var(--color_r), var(--color_g), var(--color_b), 0.5);
+    background: var(--color_light_black);
+    z-index: 10;
+}
+div#browser_panel[data-visible="1"] {
+    display: flex;
+}
+section#main_shell[data-layout="split"] div#browser_panel {
+    left: calc(50% + 0.37vh);
+}
+section#main_shell[data-layout="browser"] div#browser_panel {
+    border-left: none;
+}
+
+div#browser_toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5vh;
+    padding: 0.5vh;
+    border-bottom: 0.18vh solid rgba(var(--color_r), var(--color_g), var(--color_b), 0.5);
+}
+
+button.browser_btn {
+    font-family: var(--font_main);
+    font-size: 1.4vh;
+    color: rgb(var(--color_r), var(--color_g), var(--color_b));
+    background: transparent;
+    border: 0.18vh solid rgba(var(--color_r), var(--color_g), var(--color_b), 0.5);
+    padding: 0.3vh 0.8vh;
+    cursor: pointer;
+    min-width: 3vh;
+}
+button.browser_btn:hover:not(:disabled) {
+    background: rgba(var(--color_r), var(--color_g), var(--color_b), 0.2);
+}
+button.browser_btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+button.browser_btn[data-on="1"] {
+    background: rgb(var(--color_r), var(--color_g), var(--color_b));
+    color: var(--color_light_black);
+    font-weight: bold;
+}
+
+input#browser_url {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font_mono);
+    font-size: 1.4vh;
+    color: rgb(var(--color_r), var(--color_g), var(--color_b));
+    background: var(--color_black, #000);
+    border: 0.18vh solid rgba(var(--color_r), var(--color_g), var(--color_b), 0.5);
+    padding: 0.4vh 0.8vh;
+    outline: none;
+}
+input#browser_url:focus {
+    border-color: rgb(var(--color_r), var(--color_g), var(--color_b));
+}
+input#browser_url::placeholder {
+    color: rgba(var(--color_r), var(--color_g), var(--color_b), 0.4);
+}
+
+div#browser_layouts {
+    display: flex;
+    gap: 0.3vh;
+}
+
+ul#browser_tabs {
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: 0.18vh solid rgba(var(--color_r), var(--color_g), var(--color_b), 0.5);
+    overflow: hidden;
+}
+ul#browser_tabs > li {
+    display: flex;
+    align-items: center;
+    gap: 0.6vh;
+    max-width: 22vh;
+    min-width: 0;
+    padding: 0.4vh 0.8vh;
+    font-size: 1.3vh;
+    cursor: pointer;
+    border-right: 0.18vh solid rgba(var(--color_r), var(--color_g), var(--color_b), 0.3);
+}
+ul#browser_tabs > li > p {
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+ul#browser_tabs > li.active {
+    background: rgb(var(--color_r), var(--color_g), var(--color_b));
+    color: var(--color_light_black);
+    font-weight: bold;
+}
+ul#browser_tabs > li.loading > p {
+    opacity: 0.7;
+}
+span.browser_tab_close {
+    opacity: 0.6;
+}
+span.browser_tab_close:hover {
+    opacity: 1;
+}
+li#browser_tab_new {
+    font-weight: bold;
+}
+
+div#browser_area {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+h2#browser_placeholder {
+    font-weight: normal;
+    font-size: 2vh;
+    text-align: center;
+    opacity: 0.6;
+}
+h2#browser_placeholder > i {
+    font-size: 1.4vh;
+    font-style: normal;
+    opacity: 0.7;
+}
+
+/* Shown over the toolbar: the native page view covers everything inside #browser_area */
+p#browser_notice {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    margin: 0;
+    padding: 0.6vh 1vh;
+    font-size: 1.4vh;
+    background: var(--color_light_black);
+    border: 0.18vh solid rgb(var(--color_r), var(--color_g), var(--color_b));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+    z-index: 2;
+}
+p#browser_notice[data-show="1"] {
+    opacity: 1;
+}
+p#browser_notice[data-type="error"],
+p#browser_notice[data-type="warning"] {
+    border-color: var(--color_red, red);
+}
