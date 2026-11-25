@@ -40,7 +40,7 @@ class Orchestrator extends EventEmitter {
     }
 
     // Handle one user utterance. source: "typed" | "voice". Returns the final turn record.
-    async handle(text, {source = "typed", speak = source === "voice"} = {}) {
+    async handle(text, {source = "typed", speak = source === "voice", extraTimings = null} = {}) {
         const input = String(text || "").trim();
         if (!input) return {ok: false, error: "Empty command"};
         if (input.length > 2000) return {ok: false, error: "Command is too long (max 2000 characters)"};
@@ -49,7 +49,7 @@ class Orchestrator extends EventEmitter {
         const turn = {id: crypto.randomUUID(), abort: new AbortController(), startedAt: performance.now()};
         this.current = turn;
         const signal = turn.abort.signal;
-        const record = {id: turn.id, input, source, toolResults: [], timings: {llm: [], tools: []}, reply: "", ok: false};
+        const record = {id: turn.id, input, source, toolResults: [], timings: {llm: [], tools: [], ...(extraTimings || {})}, reply: "", ok: false};
         this.emit("event", {type: "user", id: turn.id, text: input, source});
 
         let provider;
@@ -117,10 +117,13 @@ class Orchestrator extends EventEmitter {
                 const tts = await this.speech.speak(finalText, signal).catch(e => ({error: e.message}));
                 if (tts && tts.firstAudioMs != null) record.timings.ttsFirstAudioMs = round0(tts.firstAudioMs);
                 if (tts && tts.error && !signal.aborted) this.emit("event", {type: "notice", level: "warning", text: `Speech output failed: ${tts.error}`});
+                if (tts && tts.interrupted) record.timings.speechInterrupted = true;
+                record.timings.endToEndMs = round0(performance.now() - turn.startedAt);
             }
             if (this.current === turn) {
                 this.current = null;
-                this.setState("idle");
+                // Push-to-talk may have interrupted the speech and switched to "listening": keep that
+                if (!(speak && this.state === "listening")) this.setState("idle");
             }
             this.emit("event", {type: "turn-done", id: turn.id, record: publicRecord(record)});
             return record;

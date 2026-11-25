@@ -1,6 +1,6 @@
 // Smoke test: launch eDEX AI, drive it over the Chrome DevTools Protocol (loopback only,
 // enabled only here), check terminal + telemetry + security, save a screenshot.
-// Usage: node tests/smoke/launch.mjs [--keep] [--only=m0,m1,m2]
+// Usage: node tests/smoke/launch.mjs [--keep] [--only=m0,m1,m2,m3]
 import {spawn, execSync} from "node:child_process";
 import {createRequire} from "node:module";
 import fs from "node:fs";
@@ -15,7 +15,7 @@ const WS = require("ws");
 const PORT = 9333;
 const args = process.argv.slice(2);
 const keep = args.includes("--keep");
-const only = (args.find(a => a.startsWith("--only=")) || "--only=m0,m1,m2").slice(7).split(",");
+const only = (args.find(a => a.startsWith("--only=")) || "--only=m0,m1,m2,m3").slice(7).split(",");
 const outDir = path.join(root, "tests", "smoke", "out");
 fs.mkdirSync(outDir, {recursive: true});
 
@@ -167,6 +167,10 @@ try {
     if (only.includes("m2") && fs.existsSync(path.join(root, "tests", "smoke", "m2.mjs"))) {
         const m2 = await import("./m2.mjs");
         await m2.run({cdp, check, sleep, waitFor, screenshot, getTargets, CDP, termText});
+    }
+    if (only.includes("m3") && fs.existsSync(path.join(root, "tests", "smoke", "m3.mjs"))) {
+        const m3 = await import("./m3.mjs");
+        await m3.run({cdp, check, sleep, waitFor, screenshot});
     }
 } catch (e) {
     check("smoke run completed without exceptions", false, e.message);

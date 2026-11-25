@@ -334,6 +334,25 @@ app.on('ready', async () => {
         signale.error(`Assistant unavailable: ${e.message}`);
     }
 
+    // eDEX AI: voice (Python sidecar: faster-whisper + Piper, stdin/stdout only)
+    if (edexai.assistant && edexai.config.voice && edexai.config.voice.enabled !== false && process.env.EDEXAI_NO_VOICE !== "1") {
+        const {VoiceService, registerVoice} = require("./main/voice.js");
+        edexai.voice = new VoiceService({
+            config: edexai.config.voice,
+            userDataDir: electron.app.getPath("userData"),
+            log: msg => signale.note(`[voice] ${msg}`)
+        });
+        edexai.assistant.voice = edexai.voice;
+        registerVoice({
+            voice: edexai.voice,
+            orchestrator: edexai.assistant.orchestrator,
+            guard,
+            sendEvent: edexai.assistant.send,
+            log: msg => signale.note(`[voice] ${msg}`)
+        });
+        edexai.voice.start();
+    }
+
     // Support for more terminals, used for creating tabs (currently limited to 4 extra terms)
     extraTtys = {};
     let basePort = settings.port || 3000;
@@ -431,6 +450,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+    if (edexai.voice) edexai.voice.shutdown();
     if (edexai.browser) edexai.browser.destroy();
     tty.close();
     Object.keys(extraTtys).forEach(key => {

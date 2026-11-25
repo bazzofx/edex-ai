@@ -160,6 +160,12 @@ class AssistantPanel {
     }
 
     onVoiceStatus(v) {
+        if (v.state !== this.lastVoiceState) {
+            this.lastVoiceState = v.state;
+            if (v.state === "ready") this.addLine("info", "VOICE", `Ready (${v.detail}). Hold ${this.pttKey} or HOLD TO TALK.`);
+            else if (v.state === "loading") this.addLine("info", "VOICE", "Loading speech models…");
+            else if (v.state === "error") this.addLine("error", "VOICE", v.detail || "Voice engine failed");
+        }
         this.recEl.dataset.on = v.recording ? "1" : "0";
         document.getElementById("assistant_ptt").disabled = !v.ready;
         document.getElementById("assistant_ptt").title = v.ready ? "Hold to talk (or hold F8)" : `Voice not ready: ${v.detail || v.state}`;

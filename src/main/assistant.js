@@ -88,10 +88,17 @@ function createAssistant({config, userDataDir, browser, ui, getWindow, guard, lo
         } catch (e) {
             providerInfo = `unavailable: ${e.message}`;
         }
-        return {success: true, data: {state: orchestrator.state, provider: providerInfo, tools: registry.list().map(t => t.name)}};
+        return {success: true, data: {
+            state: orchestrator.state,
+            provider: providerInfo,
+            tools: registry.list().map(t => t.name),
+            voice: api.voice ? api.voice.status() : null,
+            pttKey: (config.voice && config.voice.pttKey) || "F8"
+        }};
     });
 
-    return {orchestrator, registry, getProvider};
+    const api = {orchestrator, registry, getProvider, send, voice: null};
+    return api;
 }
 
 module.exports = {createAssistant, createProvider};
