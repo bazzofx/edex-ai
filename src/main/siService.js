@@ -2,8 +2,8 @@
 //
 // eDEX AI change: upstream forked one worker per CPU core and every worker started its own
 // PowerShell/WMI sessions. With systeminformation 5.33 on Windows that pinned all cores at
-// 100% (about 30 powershell.exe plus WUDFHost/WMI load). Now: one process, one persistent
-// PowerShell session, de-duplicated in-flight calls and a minimum refresh interval per call.
+// 100% (about 30 powershell.exe plus WUDFHost/WMI load). Now: one process (no persistent
+// PowerShell, it hangs), de-duplicated in-flight calls and a minimum refresh interval per call.
 "use strict";
 
 const si = require("systeminformation");
@@ -35,10 +35,9 @@ class SiService {
         this.cache = new Map();     // key -> {at, value}
         this.inflight = new Map();  // key -> promise
         this.calls = 0;
-        if (process.platform === "win32" && typeof si.powerShellStart === "function") {
-            si.powerShellStart();
-            this.persistentShell = true;
-        }
+        // Do NOT use si.powerShellStart(): with systeminformation 5.33 on Windows the persistent
+        // session hangs on processes() and every call queued behind it (verified 2026-11-25).
+        this.persistentShell = false;
     }
 
     isAllowed(fn) {
